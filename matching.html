@@ -1,0 +1,339 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MavunoHub | Smart Matching</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f7f3;
+      color: #26352b;
+    }
+
+    header {
+      background: #176b43;
+      color: white;
+      padding: 22px 8%;
+    }
+
+    header h1 {
+      margin: 0;
+    }
+
+    main {
+      max-width: 850px;
+      margin: 35px auto;
+      padding: 20px;
+    }
+
+    .panel {
+      background: white;
+      padding: 25px;
+      margin-bottom: 25px;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px #0000000c;
+    }
+
+    h2 {
+      color: #176b43;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 7px;
+      border: 1px solid #ccd5cc;
+      border-radius: 7px;
+      font-size: 15px;
+    }
+
+    button {
+      background: #176b43;
+      color: white;
+      border: none;
+      padding: 13px 20px;
+      margin-top: 20px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    button:hover {
+      background: #105333;
+    }
+
+    .match {
+      border: 1px solid #d9e5d9;
+      padding: 17px;
+      margin-top: 15px;
+      border-radius: 9px;
+    }
+
+    .score {
+      color: #176b43;
+      font-weight: bold;
+    }
+
+    .muted {
+      color: #68766b;
+      font-size: 14px;
+    }
+
+    #results {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>🌱 MavunoHub</h1>
+  <p>Connecting farmers to reliable buyers</p>
+</header>
+
+<main>
+
+  <section class="panel">
+    <h2>Find Farmers for Your Order</h2>
+    <p class="muted">
+      Enter your requirements to find suitable produce suppliers.
+    </p>
+
+    <form id="buyerForm">
+
+      <label>Produce required</label>
+      <select id="crop" required>
+        <option value="">Select produce</option>
+        <option value="Tomatoes">Tomatoes</option>
+        <option value="Potatoes">Potatoes</option>
+        <option value="Maize">Maize</option>
+        <option value="Cabbages">Cabbages</option>
+      </select>
+
+      <label>Quantity required (kg)</label>
+      <input type="number" id="quantity" min="1" required>
+
+      <label>Delivery location</label>
+      <select id="location" required>
+        <option value="">Select location</option>
+        <option value="Nairobi">Nairobi</option>
+        <option value="Machakos">Machakos</option>
+        <option value="Nyandarua">Nyandarua</option>
+        <option value="Meru">Meru</option>
+      </select>
+
+      <label>Maximum price per kg (KES)</label>
+      <input type="number" id="price" min="1" required>
+
+      <label>Preferred quality</label>
+      <select id="quality" required>
+        <option value="Standard">Standard</option>
+        <option value="Premium">Premium</option>
+      </select>
+
+      <button type="submit">Find Matching Farmers</button>
+
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Recommended Farmers</h2>
+    <div id="results">
+      <p class="muted">Your farmer recommendations will appear here.</p>
+    </div>
+  </section>
+
+</main>
+
+<script>
+
+  // Sample farmer data for testing.
+  // Later, this information will come from our database.
+
+  const farmers = [
+    {
+      name: "John Mwangi",
+      crop: "Tomatoes",
+      quantity: 1000,
+      location: "Machakos",
+      price: 80,
+      quality: "Premium"
+    },
+    {
+      name: "Mary Wanjiku",
+      crop: "Potatoes",
+      quantity: 1500,
+      location: "Nyandarua",
+      price: 55,
+      quality: "Standard"
+    },
+    {
+      name: "Peter Kimani",
+      crop: "Tomatoes",
+      quantity: 500,
+      location: "Nairobi",
+      price: 90,
+      quality: "Standard"
+    },
+    {
+      name: "Grace Mutua",
+      crop: "Maize",
+      quantity: 2000,
+      location: "Machakos",
+      price: 45,
+      quality: "Premium"
+    },
+    {
+      name: "David Muriithi",
+      crop: "Tomatoes",
+      quantity: 1200,
+      location: "Meru",
+      price: 75,
+      quality: "Premium"
+    }
+  ];
+
+  const form = document.getElementById("buyerForm");
+
+  form.addEventListener("submit", function(event) {
+
+    event.preventDefault();
+
+    const request = {
+      crop: document.getElementById("crop").value,
+      quantity: Number(document.getElementById("quantity").value),
+      location: document.getElementById("location").value,
+      price: Number(document.getElementById("price").value),
+      quality: document.getElementById("quality").value
+    };
+
+    if (
+      !request.crop ||
+      !request.location ||
+      request.quantity <= 0 ||
+      request.price <= 0
+    ) {
+      alert("Please enter valid order requirements.");
+      return;
+    }
+
+    const matches = farmers.map(farmer => {
+
+      let score = 0;
+      let reasons = [];
+
+      // Crop match: 35 points
+      if (farmer.crop === request.crop) {
+        score += 35;
+        reasons.push("Same produce");
+      } else {
+        return { ...farmer, score: 0, reasons: ["Different produce"] };
+      }
+
+      // Quantity match: up to 20 points
+      const quantityRatio = Math.min(
+        farmer.quantity / request.quantity, 1
+      );
+
+      score += 20 * quantityRatio;
+
+      if (farmer.quantity >= request.quantity) {
+        reasons.push("Enough quantity available");
+      } else {
+        reasons.push("Partial quantity available");
+      }
+
+      // Location match: 15 points
+      if (farmer.location === request.location) {
+        score += 15;
+        reasons.push("Same location");
+      } else {
+        score += 5;
+        reasons.push("Different location");
+      }
+
+      // Quality match: 15 points
+      if (farmer.quality === request.quality) {
+        score += 15;
+        reasons.push("Quality matches");
+      }
+
+      // Price match: 10 points
+      if (farmer.price <= request.price) {
+        score += 10;
+        reasons.push("Within your budget");
+      }
+
+      // Price difference reduces suitability
+      // when farmer's price is above buyer's budget.
+
+      // Availability: 5 points
+      score += 5;
+      reasons.push("Listed as available in sample data");
+
+      return {
+        ...farmer,
+        score: Math.round(score),
+        reasons
+      };
+
+    });
+
+    // Sort from highest score to lowest.
+    matches.sort((a, b) => b.score - a.score);
+
+    const results = document.getElementById("results");
+
+    const suitable = matches.filter(farmer => farmer.score >= 35);
+
+    if (suitable.length === 0) {
+      results.innerHTML =
+        "<p>No suitable farmers found. Try adjusting your requirements.</p>";
+      return;
+    }
+
+    results.innerHTML = suitable.map(farmer => `
+
+      <div class="match">
+
+        <h3>${farmer.name}</h3>
+
+        <p><strong>Produce:</strong> ${farmer.crop}</p>
+        <p><strong>Available:</strong> ${farmer.quantity} kg</p>
+        <p><strong>Location:</strong> ${farmer.location}</p>
+        <p><strong>Price:</strong> KES ${farmer.price}/kg</p>
+        <p><strong>Quality:</strong> ${farmer.quality}</p>
+
+        <p class="score">
+          Match score: ${farmer.score}%
+        </p>
+
+        <p class="muted">
+          Why this farmer matched: ${farmer.reasons.join(", ")}
+        </p>
+
+      </div>
+
+    `).join("");
+
+  });
+
+</script>
+
+</body>
+</html>
